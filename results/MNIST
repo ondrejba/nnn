@@ -1,0 +1,28 @@
+
+## Dense network ##
+
+### Structure ###
+575050 parameters
+
+LinearLayer(784, 512, learning_rate),
+ReLU(),
+LinearLayer(512, 256, learning_rate),
+ReLU(),
+LinearLayer(256, 128, learning_rate),
+ReLU(),
+LinearLayer(128, 64, learning_rate),
+ReLU(),
+LinearLayer(64, 10, learning_rate),
+Softmax()
+
+### Training ###
+batch size: 32
+learning schedule:
+    0       -   30000   iterations: 0.01
+    30000   -   60000   iterations: 0.005
+    60000   -   100000  iterations: 0.001
+number of steps: 100000
+
+### Results: ###
+validation accuracy: 97.87%
+test accuracy: 97.84%

@@ -14,6 +14,9 @@ class Layer(ABC):
     """ Compute a gradient w.r.t. inputs and a gradient w.r.t. parameters. """
     pass
 
+  def count_parameters(self):
+    return 0
+
 class LinearLayer(Layer):
 
   def __init__(self, n_inputs, n_outputs, learning_rate):
@@ -49,6 +52,12 @@ class LinearLayer(Layer):
   def update(self, learning_rate):
     self.weights -= learning_rate * self.grad_weights / self.input.shape[0]
     self.biases -= learning_rate * self.grad_bias / self.input.shape[0]
+
+  def count_parameters(self):
+    count = 0
+    count += self.weights.shape[0] * self.weights.shape[1]
+    count += self.biases.shape[1]
+    return count
 
 class ReLU(Layer):
 

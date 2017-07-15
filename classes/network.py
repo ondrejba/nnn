@@ -22,3 +22,15 @@ class FeedForward(object):
 
   def compute_cost(self, data, labels):
     return self.cost.compute_cost(data, labels)
+
+  def update_learning_rate(self, new_learning_rate):
+    for layer in self.layers:
+      if hasattr(layer, "learning_rate"):
+        layer.learning_rate = new_learning_rate
+
+  def count_parameters(self):
+    count = 0
+    for layer in self.layers:
+      count += layer.count_parameters()
+
+    return count

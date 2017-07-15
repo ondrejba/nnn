@@ -1,9 +1,9 @@
-class Dataset():
-  def __init__(self, train_data, train_labels, valid_data, valid_labels, batch_size=32):
+import numpy as np
+
+class BatchFeed():
+  def __init__(self, train_data, train_labels, batch_size=32):
     self.train_data = train_data
     self.train_labels = train_labels
-    self.valid_data = valid_data
-    self.valid_labels = valid_labels
 
     self.i = 0
     self.batch_size = batch_size
@@ -19,5 +19,12 @@ class Dataset():
 
     return data, labels
 
-  def get_valid_data(self):
-    return self.valid_data, self.valid_labels
+def one_hot_accuracy(predictions, labels):
+
+  arg_predictions = np.argmax(predictions, axis=1)
+  arg_labels = np.argmax(labels, axis=1)
+
+  correct = np.sum(np.equal(arg_labels, arg_predictions))
+  total = labels.shape[0]
+
+  return correct / total
