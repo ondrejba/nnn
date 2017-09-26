@@ -3,7 +3,7 @@ import numpy as np
 
 import classes.data as data
 from classes.cost import SoftmaxCrossEntropy
-from classes.layer import LinearLayer, ReLU, Softmax
+from classes.layer import BatchNorm, LinearLayer, ReLU, Softmax
 from classes.network import FeedForward
 from classes.schedule import DiscreteSchedule
 
@@ -29,12 +29,16 @@ feed = data.BatchFeed(dataset["train_data"], dataset["train_labels"], batch_size
 
 layers = [
   LinearLayer(784, 512, learning_rate),
+  BatchNorm(512),
   ReLU(),
   LinearLayer(512, 256, learning_rate),
+  BatchNorm(256),
   ReLU(),
   LinearLayer(256, 128, learning_rate),
+  BatchNorm(128),
   ReLU(),
   LinearLayer(128, 64, learning_rate),
+  BatchNorm(64),
   ReLU(),
   LinearLayer(64, 10, learning_rate),
   Softmax()

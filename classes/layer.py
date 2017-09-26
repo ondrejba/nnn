@@ -104,7 +104,7 @@ class Convolution2D(Layer):
 
 class BatchNorm(Layer):
 
-  def __init__(self, convolutional=False, update_moving_mean_and_var=True):
+  def __init__(self, num_filters, convolutional=False, update_moving_mean_and_var=True):
 
     # hyper parameters
     self.epsilon = 1e-4
@@ -113,8 +113,8 @@ class BatchNorm(Layer):
     self.update_moving_mean_and_var = update_moving_mean_and_var
 
     # trainable parameters
-    self.gamma = 1
-    self.beta = 0
+    self.gamma = np.ones(num_filters)
+    self.beta = np.zeros(num_filters)
 
     # parameters to update
     self.moving_mean = None
