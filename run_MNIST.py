@@ -5,7 +5,7 @@ import classes.data as data
 from classes.cost import SoftmaxCrossEntropy
 from classes.layer import BatchNorm, LinearLayer, ReLU, Softmax
 from classes.network import FeedForward
-from classes.schedule import DiscreteSchedule
+from classes.schedule import ExponentialSchedule
 
 PICKLE_FILE = "datasets/MNIST/MNIST.pickle"
 
@@ -14,9 +14,9 @@ with open(PICKLE_FILE, "rb") as file:
   dataset = pickle.load(file)
 
 # parameters
-learning_rate = 0.01
+learning_rate = 1
 batch_size = 32
-num_steps = 100000
+num_steps = 10000
 enable_schedule = True
 report_test_accuracy = True
 
@@ -50,7 +50,7 @@ network = FeedForward(layers, cost)
 
 print("training a network with {:d} parameters".format(network.count_parameters()))
 
-schedule = DiscreteSchedule([0, 30000, 60000], [0.01, 0.005, 0.001])
+schedule = ExponentialSchedule(learning_rate, 100, 0.9)
 
 costs = []
 
@@ -62,6 +62,9 @@ for i in range(num_steps):
   costs.append(network.compute_cost(forward, labels))
   network.backprop(forward, labels)
 
+  if enable_schedule and i != 0 and i % 10 == 0:
+    network.update_learning_rate(schedule.get_learning_rate(i))
+
   if i != 0 and i % 1000 == 0:
     print("step {:d}".format(i))
     print("cost 100 steps average: {:.6f}".format(np.mean(costs[len(costs) - 100:])))
@@ -71,9 +74,6 @@ for i in range(num_steps):
 
     print("validation accuracy: {:.2f}%".format(valid_accuracy * 100))
     print()
-
-    if enable_schedule:
-      network.update_learning_rate(schedule.get_learning_rate(i))
 
 if report_test_accuracy:
   forward = network.feed_forward(dataset["test_data"])

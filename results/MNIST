@@ -1,5 +1,5 @@
 
-## Dense network ##
+## Dense network without Batch Normalization ##
 
 ### Structure ###
 575050 parameters
@@ -26,3 +26,36 @@ number of steps: 100000
 ### Results: ###
 validation accuracy: 97.87%
 test accuracy: 97.84%
+
+## Dense Network with Batch Normalization ##
+
+### Structure ###
+575050 parameters
+
+LinearLayer(784, 512, learning_rate),
+BatchNorm(512),
+ReLU(),
+LinearLayer(512, 256, learning_rate),
+BatchNorm(256),
+ReLU(),
+LinearLayer(256, 128, learning_rate),
+BatchNorm(128),
+ReLU(),
+LinearLayer(128, 64, learning_rate),
+BatchNorm(64),
+ReLU(),
+LinearLayer(64, 10, learning_rate),
+Softmax()
+
+### Training ###
+batch size: 32
+learning schedule:
+    exponential decay:
+        learning rate: 1
+        decay rate: 0.9
+        decay steps: 100
+number of steps: 10000
+
+### Results: ###
+validation accuracy: 97.78%
+test accuracy: 98.05%
