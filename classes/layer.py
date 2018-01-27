@@ -74,12 +74,13 @@ class ReLU(Layer):
 
 class Convolution2D(Layer):
 
-  def __init__(self, input_shape, filter_shape, stride, num_filters, padding):
+  def __init__(self, input_shape, filter_shape, num_filters, stride, padding, learning_rate):
     self.input_shape = input_shape
     self.filter_shape = filter_shape
     self.stride = stride
     self.num_filters = num_filters
     self.padding = padding
+    self.learning_rate = learning_rate
 
     # calculate parameters for weight initialization
     normal_stddev = 1.0 / np.sqrt(np.product(input_shape))
@@ -87,7 +88,7 @@ class Convolution2D(Layer):
     normal_min = -2 - normal_mean
     normal_max = 2 - normal_mean
 
-    self.weights = stats.truncnorm.rvs(normal_min, normal_max, loc=normal_mean, scale=normal_stddev, size=(num_filters, *input_shape))
+    self.weights = stats.truncnorm.rvs(normal_min, normal_max, loc=normal_mean, scale=normal_stddev, size=(*self.filter_shape, num_filters))
     self.biases = np.zeros((1, num_filters))
 
     self.input = None
@@ -96,11 +97,92 @@ class Convolution2D(Layer):
 
   def feed_forward(self, data):
     self.input = data
-    return signal.convolve(self.input, self.weights, mode=self.padding)
+    return self.__convolve(self.input, self.weights, self.padding) + self.biases
 
   def backprop(self, grad_output):
-    self.grad_weights = signal.convolve(self.input, grad_output)
-    return signal.convolve(grad_output, np.flip(self.weights, axis=0))
+
+    weights_transpose = np.transpose(self.weights, axes=[0, 2, 1, 3])
+    grad_transpose = np.transpose(grad_output, axes=[0, 2, 1, 3])
+
+    self.grad_weights = self.__convolve_deltas(grad_transpose, self.input, mode=self.padding)
+    self.grad_weights = np.mean(self.grad_weights, axis=0)
+
+    self.grad_biases = np.mean(np.sum(grad_output, axis=(1, 2, 3)), axis=0) 
+
+    grad_outputs = self.__convolve(self.input, weights_transpose, mode=self.padding)
+
+    self.update(self.learning_rate)
+
+    return grad_outputs
+
+  def update(self, learning_rate):
+
+    print(self.grad_weights.shape)
+    print(self.grad_biases.shape)
+    self.weights -= learning_rate * self.grad_weights
+    self.biases -= learning_rate * self.grad_biases
+
+  def __convolve(self, inputs, filters, mode):
+
+    print(inputs.shape)
+    print(filters.shape)
+
+    output_stack = []
+
+    for output_filter_idx in range(filters.shape[3]):
+
+      batch_stack = []
+
+      for batch_index in range(inputs.shape[0]):
+
+        image_response = []
+
+        for input_filter_idx in range(filters.shape[2]):
+
+          out = signal.convolve2d(inputs[batch_index, :, :, input_filter_idx], 
+                                  filters[:, :, input_filter_idx, output_filter_idx], mode=mode)
+
+          image_response.append(out)
+
+        # stack depth-wise
+        image_response = np.sum(image_response, axis=0)
+        batch_stack.append(image_response)
+
+      # stack batch-wise
+      batch_stack = np.stack(batch_stack, axis=0)
+      output_stack.append(batch_stack)
+
+    # stack depth-wise
+    output_stack = np.stack(output_stack, axis=-1)
+
+    return output_stack
+
+  def __convolve_deltas(self, deltas, inputs, mode):
+
+    print(deltas.shape)
+    print(inputs.shape)
+
+    batch_stack = []
+
+    for batch_index in range(deltas.shape[0]):
+
+      image_response = []
+
+      for input_filter_idx in range(deltas.shape[3]):
+
+        out = signal.convolve2d(deltas[batch_index, :, :, input_filter_idx], 
+                                inputs[batch_index, :, :, input_filter_idx], mode=mode)
+
+        image_response.append(out)
+
+      # stack depth-wise
+      image_response = np.sum(image_response, axis=0)
+      batch_stack.append(image_response)
+
+    # stack batch-wise
+    batch_stack = np.stack(batch_stack, axis=0)
+
+    return batch_stack
 
 class BatchNorm(Layer):
 
@@ -182,6 +264,22 @@ class BatchNorm(Layer):
         self.moving_var = self.minibatch_var
       else:
         self.moving_var += self.alpha * (self.minibatch_var - self.moving_var)
+
+class Flatten(Layer):
+
+  def __init__(self):
+    self.data_height = None
+    self.data_width = None
+
+  def feed_forward(self, data):
+    self.data_height = data.shape[1]
+    self.data_width = data.shape[2]
+    self.data_depth = data.shape[3]
+
+    return np.reshape(data, [data.shape[0], self.data_height * self.data_width * self.data_depth])
+
+  def backprop(self, grad_output):
+    return np.reshape(grad_output, [grad_output.shape[0], self.data_height, self.data_width, self.data_depth])
 
 class Softmax(Layer):
 
